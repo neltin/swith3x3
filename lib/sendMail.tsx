@@ -3,6 +3,7 @@ import {createTransport} from 'nodemailer';
 import {sign} from 'jsonwebtoken';
 
 export async function tokenMail(email: string) {
+    console.log("email Mail token: ", email);
     try {
         const token = sign({ email }, process.env.NEXT_JWT_SECRET!, { expiresIn: '1h' });
 
@@ -19,15 +20,16 @@ export async function tokenMail(email: string) {
             to: email,
             subject: 'Confirma tu registro',
             html: `<p>Haz click en el siguiente enlace para confirmar tu email:</p>
-                <a href="http://localhost:3000/users/register/step2?token=${token}">Confirmar email</a>`,
+                <a href="http://localhost:3000/users/confirmaction?token=${token}">Confirmar email</a>`,
         };
 
 
-        const info = await transporter.sendMail(mailOptions);
-        console.log('Correo enviado: ', info.messageId);
+        await transporter.sendMail(mailOptions);
+
+        return { success: true, message: "Correo enviado: "}
 
     } catch (error) {
         console.error('Error enviando el correo: ', error);
-
+        return { error: 'Error enviando el correo: ' + error.message };
     }
 }

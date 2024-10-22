@@ -1,7 +1,7 @@
 "use server";
 import mysql, { ResultSetHeader } from 'mysql2/promise';
 
-export default async function mysqlQuery (query:string , data:string[]){
+export default async function mysqlQuery (query: string , data: (string | number)[]){
     const db = await mysql.createConnection({
         host: process.env.NEXT_DATABASE_HOST,
         port: 3306,
@@ -10,7 +10,7 @@ export default async function mysqlQuery (query:string , data:string[]){
         database: process.env.NEXT_DATABASE_NAME
     });
 
-    const [result] = await db.execute<ResultSetHeader>(query, data);
+    const [result] = await db.execute(query, data);
 
     await db.end();
 
