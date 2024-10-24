@@ -1,12 +1,10 @@
 "use server";
 import {createTransport} from 'nodemailer';
-import {sign} from 'jsonwebtoken';
+//import { NextResponse } from "next/server";
 
-export async function tokenMail(email: string) {
+export async function tokenMail(email: string, token: string) {
     console.log("email Mail token: ", email);
     try {
-        const token = sign({ email }, process.env.NEXT_JWT_SECRET!, { expiresIn: '1h' });
-
         const transporter = createTransport({
             service: 'gmail', // o cualquier otro servicio SMTP
             auth: {
@@ -20,13 +18,15 @@ export async function tokenMail(email: string) {
             to: email,
             subject: 'Confirma tu registro',
             html: `<p>Haz click en el siguiente enlace para confirmar tu email:</p>
-                <a href="http://localhost:3000/users/confirmaction?token=${token}">Confirmar email</a>`,
+                <a href="http://localhost:3000/users/confirmaction?token=${token}">Confirmar email</a>
+                <p>O ingresa este código de verificación en la página de confirmación: <strong>${token}</strong></p>`,
         };
-
 
         await transporter.sendMail(mailOptions);
 
-        return { success: true, message: "Correo enviado: "}
+        return { ok: true, message: "Correo enviado." };
+
+        //return NextResponse.json( "Correo enviado." , {status: 200});
 
     } catch (error) {
         console.error('Error enviando el correo: ', error);

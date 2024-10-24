@@ -3,7 +3,7 @@ import { signIn } from 'next-auth/react';
 import { useEffect, useState } from 'react';
 
 export default function Login() {
-    const [mensaje, setMensaje] = useState(false);
+  const [message, setMessage] = useState(false);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -17,7 +17,7 @@ export default function Login() {
     });
 
     if (result.ok) {
-        setMensaje("Esta logueado");
+        setMessage("Esta logueado");
     } else {
         console.log(result);
 
@@ -36,9 +36,8 @@ export default function Login() {
         <button type="submit">Login</button>
       </form>
       <div>
-        {mensaje ? <p>{mensaje}</p> : ""}
+        {message ? <p>{message}</p> : ""}
       </div>
     </div>
-
   );
 }

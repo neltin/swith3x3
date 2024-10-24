@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { createTeam, getJerseyColors } from "@/lib/queryFunction";
+import { createTeam, getJerseyColors } from "../../../../lib/queryFuntion";
 
 export default function RegisterTeam() {
     const [teamName, setTeamName] = useState("");

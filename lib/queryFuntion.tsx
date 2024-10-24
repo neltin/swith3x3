@@ -1,7 +1,9 @@
 'use server';
 import mysqlQuery  from "./bd";
+import { RowDataPacket } from 'mysql2';
 import { compare, genSalt, hash } from 'bcryptjs';
 import { tokenMail } from "./sendMail";
+//import { NextResponse } from "next/server";
 
 export async function getTabla() {
     try{    
@@ -23,29 +25,12 @@ export async function login(email:string, password:string) {
   
     return { id: user.id, name: user.nombre, email: user.email };
 }
-/*
-export async function register(email:string, password:string) {
-    try {
-        const salt = await genSalt(10);
-        const pass = await hash(password, salt);
-        
-        await mysqlQuery('INSERT INTO users (email, password) VALUES (?, ?)', [email, pass]);
-        
-        console.log("Registro exitoso");
-
-    }catch(error){
-        console.error("Error registrando el usuario: ", error);
-    }    
-}
-*/
 
 export async function register(first_name: string, last_name: string, email: string, password: string) {
 
     try {
         // Verifica si el email ya existe
         const existingUser = await mysqlQuery('SELECT * FROM users WHERE email = ?', [email]);
-        
-        console.log("existingUser: ", existingUser);
 
         if (Array.isArray(existingUser) && existingUser.length > 0) {
             return { error: "El correo ya está registrado." };
@@ -54,14 +39,28 @@ export async function register(first_name: string, last_name: string, email: str
         // Hasheo de la contraseña
         const salt = await genSalt(10);
         const hashedPassword = await hash(password, salt);
-        
+
         // Inserción del usuario con estado 'Blocked' por defecto
         await mysqlQuery('INSERT INTO users (first_name, last_name, email, password, status_id) VALUES (?, ?, ?, ?, ?)', [first_name, last_name, email, hashedPassword, 3]);
 
-        // Envía el token de validación por correo
-        const sendMail = await tokenMail(email);
-        console.log("sendMail: ", sendMail);
-        return  sendMail;
+        // Obtener el ID del usuario recién creado
+        const newUser = await mysqlQuery('SELECT id FROM users WHERE email = ?', [email]) as RowDataPacket[];
+
+        if (Array.isArray(newUser) && newUser.length > 0) {
+            const userId = newUser[0].id;
+
+            // Generar y guardar el token de verificación en la tabla email_verifications
+            const token = generateToken();
+            const expiresAt = new Date(Date.now() + 60 * 60 * 1000); // Expira en 1 hora
+
+            await mysqlQuery('INSERT INTO email_verifications (user_id, token, expires_at) VALUES (?, ?, ?)', [userId, token, expiresAt]);
+
+            // Envía el token de validación por correo
+            const sendMail = await tokenMail(email, token);
+            return sendMail;
+        } else {
+            throw new Error("No se pudo obtener el ID del usuario recién creado.");
+        }
 
     } catch (error) {
         console.error("Error registrando el usuario: ", error);
@@ -69,24 +68,39 @@ export async function register(first_name: string, last_name: string, email: str
     }
 }
 
+function generateToken() {
+    const characters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+    let token = '';
+    for (let i = 0; i < 6; i++) {
+        const randomIndex = Math.floor(Math.random() * characters.length);
+        token += characters[randomIndex];
+    }
+    return token;
+}
 
-export async function confirmUserEmail(email: string) {
+export async function confirmEmailToken(userInputToken: string) {
     try {
         const result = await mysqlQuery(
-            'UPDATE users SET status_id = ? WHERE email = ? AND status_id = ?',
-            [1, email, 3] // status_id 1 = Active, 3 = Blocked
-        );
-        if (Array.isArray(result) && result.length === 0) {
-            return 'error'; // Si no se afectó ninguna fila, es un error
+            'SELECT * FROM email_verifications WHERE token = ? AND expires_at > NOW()', [userInputToken]) as RowDataPacket[];
+
+        if (Array.isArray(result) && result.length > 0) {
+            const userId = result[0].user_id;
+
+            // Actualizar el estado del usuario a 'Activo' (1)
+            await mysqlQuery('UPDATE users SET status_id = ? WHERE id = ?', [1, userId]);
+
+            // Eliminar el registro del token de la tabla `email_verifications`
+            await mysqlQuery('DELETE FROM email_verifications WHERE token = ?', [userInputToken]);
+
+            return 'success';
+        } else {
+            return 'error'; // Token inválido o expirado
         }
-        
-        return 'success'; // Usuario actualizado exitosamente
     } catch (error) {
-        console.error('Error al confirmar el email: ', error);
+        console.error('Error al confirmar el token: ', error);
         return 'error';
     }
 }
-
 
 export async function getJerseyColors() {
     try {

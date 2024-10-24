@@ -1,10 +1,12 @@
 'use client';
 import { useEffect, useState } from 'react';
 import { register } from '../../../lib/queryFuntion';
-
+import { useRouter } from "next/navigation";
 export default function Login() {
-  const [mensaje, setMensaje] = useState(false);
-  
+  const [message, setMessage] = useState(false);
+
+  const router = useRouter();  
+
   const handleSubmit = async (e) => {
         e.preventDefault();
         const firstName = e.target.first_name.value;
@@ -15,12 +17,12 @@ export default function Login() {
         const result = await register( firstName, lastName,  email, password );
 
         if (result.ok) {
-            setMensaje("Esta Registrado");
-            //router.push("/users/confirmaction");
+            //setMensaje("Esta Registrado");
+            router.push("/users/confirmaction");
         } else {
             console.log("result: ", result);
 
-            setMensaje(result.error);
+            setMessage(result.error);
         }
     };
 
@@ -39,7 +41,7 @@ export default function Login() {
         <button type="submit">Registro</button>
       </form>
       <div>
-        {mensaje ? <p>{mensaje}</p> : ""}
+        {message ? <p>{message}</p> : ""}
       </div>
     </div>
   );
