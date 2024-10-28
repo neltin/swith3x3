@@ -26,7 +26,7 @@ export async function login(email:string, password:string) {
     return { id: user.id, name: user.nombre, email: user.email };
 }
 
-export async function register(first_name: string, last_name: string, email: string, password: string) {
+export async function register(first_name: string, last_name: string, dni: string, email: string, password: string) {
 
     try {
         // Verifica si el email ya existe
@@ -41,13 +41,16 @@ export async function register(first_name: string, last_name: string, email: str
         const hashedPassword = await hash(password, salt);
 
         // Inserción del usuario con estado 'Blocked' por defecto
-        await mysqlQuery('INSERT INTO users (first_name, last_name, email, password, status_id) VALUES (?, ?, ?, ?, ?)', [first_name, last_name, email, hashedPassword, 3]);
+        await mysqlQuery('INSERT INTO users (email, password, status_id) VALUES (?, ?, ?)', [email, hashedPassword, 3]);
 
         // Obtener el ID del usuario recién creado
         const newUser = await mysqlQuery('SELECT id FROM users WHERE email = ?', [email]) as RowDataPacket[];
 
         if (Array.isArray(newUser) && newUser.length > 0) {
             const userId = newUser[0].id;
+            
+            //Crear el registro de jugador del usuario
+            await mysqlQuery('INSERT INTO players (first_name, last_name, dni, status_id, user_id) VALUES (?, ?, ?, ?, ? )', [first_name, last_name, dni, 4, userId]);
 
             // Generar y guardar el token de verificación en la tabla email_verifications
             const token = generateToken();
