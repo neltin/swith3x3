@@ -3,9 +3,6 @@ import { getTabla } from "../lib/queryFuntion";
 export default async function Page({ params: { slug } }) {
   const posiciones = await getTabla();
 
-
-  
-  //console.log(campeones);
   return (
     <div>
       <p>Posicion:</p>

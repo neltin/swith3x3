@@ -105,6 +105,23 @@ export async function confirmEmailToken(userInputToken: string) {
     }
 }
 
+
+export async function getUserInfo(id: number) {
+    
+    try{ 
+        const player = await mysqlQuery(`SELECT last_name, first_name, photo_profile, dni, date_birth 
+     FROM players WHERE user_id = ? LIMIT 1`, [1]);
+
+     console.log("Player Info: ", player);
+        return player;
+        
+    } catch(error) {
+        console.error("Error obteniendo la información del usuario: ", error);
+        return 'error';
+    }
+}
+
+
 export async function getJerseyColors() {
     try {
         const colors = await mysqlQuery('SELECT id, tipo FROM jersey_color', []);
